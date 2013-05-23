@@ -1,223 +1,183 @@
-/************tcpclient.c************************/
-/*http://www.tenouk.com/Module41a.html 		*/
-/* Header files needed to use the sockets API.a */
-/* File contains Macro, Data Type and */
-/* Structure definitions along with Function */
-/* prototypes. */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <unistd.h>
-#include <errno.h>
-#include <pthread.h>
-/* BufferLength is 100 bytes */
-#define BufferLength 100
-/* Default host name of server system. Change it to your default */
-/* server hostname or IP.  If the user do not supply the hostname */
-/* as an argument, the_server_name_or_IP will be used as default*/
-#define SERVER "The_server_name_or_IP"
-/* Server's port number */
-#define SERVPORT 3456
+#include <string.h>
+#include <fcntl.h>
 
-struct stru_archivo {
- char nombre[30];
- char datos[256];
- int peso;
- };
- 
- void *menu_cliente(void *);
+//#include <sys/socket.h>
+//#include <netinet/in.h>
+#include <netdb.h> 
 
+int getFileList(int fd, const char* directory);
+int sendFile(int fd, const char* directory, const char* filename);
+void logger(const char *text);
+int startClient();
 
-/* Pass in 1 parameter which is either the */
-/* address or host name of the server, or */
-/* set the server name in the #define SERVER ... */
-int main(int argc, char *argv[])
+int main()
 {
-/* Variable and structure definitions. */
-socklen_t length;
-int sd, rc = sizeof(int);
-struct sockaddr_in serveraddr;
-char buffer[BufferLength];
-char server[255];
-char temp;
-int totalcnt = 0;
-struct stru_archivo *archivo;
-struct hostent *hostp;
-char data[100] = "This is a test string from client lol!!! ";
-//thread
- pthread_t thMenuCliente;
- void * retval;
-pthread_attr_t attr; //MIrar 
-pthread_attr_init(&attr);
-pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
+	startClient();
+/*    printf("Hello world!\n");
+    
+    creat("test_tp.txt", 0777);
+	//fd file descriptor. -1 error.
+	int fd = open("test_tp.txt", O_RDWR | O_TRUNC);    
+    getFileList(fd,"./");
 
-/* The socket() function returns a socket */
-/* descriptor representing an endpoint. */
-/* The statement also identifies that the */
-/* INET (Internet Protocol) address family */
-/* with the TCP transport (SOCK_STREAM) */
-/* will be used for this socket. */
-/******************************************/
-/* get a socket descriptor */
-if((sd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-{
-perror("Client-socket() error");
-exit(-1);
-}
-else
-printf("Client-socket() OK\n");
-/*If the server hostname is supplied*/
-if(argc > 1)
-{
-/*Use the supplied argument*/
-strcpy(server, argv[1]);
-printf("Connecting to  %s, port %d ...\n", server, SERVPORT);
-}
-else
-/*Use the default server name or IP*/
-strcpy(server, SERVER);
- 
-memset(&serveraddr, 0x00, sizeof(struct sockaddr_in));
-serveraddr.sin_family = AF_INET;
-serveraddr.sin_port = htons(SERVPORT);
-
-if((serveraddr.sin_addr.s_addr = inet_addr(server)) == (unsigned long)INADDR_NONE)
-{
- 
-/* When passing the host name of the server as a */
-/* parameter to this program, use the gethostbyname() */
-/* function to retrieve the address of the host server. */
-/***************************************************/
-/* get host address */
-hostp = gethostbyname(server);
-if(hostp == (struct hostent *)NULL)
-{
-printf("HOST NOT FOUND --> ");
-/* h_errno is usually defined */
-/* in netdb.h */
-printf("h_errno = %d\n",h_errno);
-printf("---This is a client program---\n");
-printf("Command usage: %s <server name or IP>\n", argv[0]);
-close(sd);
-exit(-1);
-}
-memcpy(&serveraddr.sin_addr, hostp->h_addr, sizeof(serveraddr.sin_addr));
-}
- 
-/* After the socket descriptor is received, the */
-/* connect() function is used to establish a */
-/* connection to the server. */
-/***********************************************/
-/* connect() to server. */
-if((rc = connect(sd, (struct sockaddr *)&serveraddr, sizeof(serveraddr))) < 0)
-{
-perror("Client-connect() error");
-close(sd);
-exit(-1);
-}
-else
-{
-printf("Connection established...\n");
- pthread_create(&thMenuCliente,&attr, menu_cliente, NULL);
-pthread_join(thMenuCliente, &retval); 
-}
-/* Send string to the server using */
-/* the write() function. */
-/*********************************************/
-/* Write() some string to the server. */
-//printf("Sending some string to the f***ing %s...\n", server);
-//rc = write(sd, data, sizeof(data));
- //Es mejor usar send (Declarar la estructura del otro lado tambiena)
- rc = write(sd,archivo,sizeof(archivo)); //Para mandar estructura
-if(rc < 0)
-{
-perror("Client-write() error");
-rc = getsockopt(sd, SOL_SOCKET, SO_ERROR, &temp, &length);
-if(rc == 0)
-{
-/* Print out the asynchronously received error. */
-errno = temp;
-perror("SO_ERROR was");
-}
-close(sd);
-exit(-1);
-}
-else
-{
-printf("Client-write() is OK\n");
-printf("String successfully sent lol!\n");
-printf("Waiting the %s to echo back...\n", server);
-}
- 
-totalcnt = 0;
-while(totalcnt < BufferLength)
-{
- 
-/* Wait for the server to echo the */
-/* string by using the read() function. */
-/***************************************/
-/* Read data from the server. */
-rc = read(sd, &buffer[totalcnt], BufferLength-totalcnt);
-if(rc < 0)
-{
-perror("Client-read() error");
-close(sd);
-exit(-1);
-}
-else if (rc == 0)
-{
-printf("Server program has issued a close()\n");
-close(sd);
-exit(-1);
-}
-else
-totalcnt += rc;
-}
-printf("Client-read() is OK\n");
-printf("Echoed data from the f***ing server: %s\n", buffer);
- 
-/* When the data has been read, close() */
-/* the socket descriptor. */
-/****************************************/
-/* Close socket descriptor from client side. */
-close(sd);
-exit(0);
-return 0;
+    sendFile(fd,"./","salida.txt");
+    close(fd);
+*/
+    return EXIT_SUCCESS;
 }
 
-void *menu_cliente(void * x )
+void logger(const char *text) {
+  printf("%s\n", text);
+}
+
+int startClient(){
+	int sockfd, portno, n;
+    struct sockaddr_in serv_addr;
+    struct hostent *server;
+    char buffer[256];
+
+
+    portno = 3456;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0){    	    	
+        logger("Al abrir socket(106)");
+        return 0;
+    }
+
+    server = gethostbyname("localhost");
+    if (server == NULL) {
+        //fprintf(stderr,"ERROR, no such host\n");
+        logger("No se encontro el host (107)");
+        close(sockfd); // creoq ue no va;
+        return 0;
+    }
+
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    
+    serv_addr.sin_family = AF_INET;
+    
+    bcopy((char *)server->h_addr, 
+         (char *)&serv_addr.sin_addr.s_addr,
+         server->h_length);
+    serv_addr.sin_port = htons(portno);
+
+    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
+    {
+        logger("ERROR connecting");
+        close(sockfd);
+        return 0;
+
+	}    
+    logger("ACA YA ESTOY CONECTADO!\n");
+
+/*
+    printf("Please enter the message: ");
+    bzero(buffer,256);
+    fgets(buffer,255,stdin);
+    n = write(sockfd,buffer,strlen(buffer));
+    if (n < 0) 
+         error("ERROR writing to socket");
+    bzero(buffer,256);
+    n = read(sockfd,buffer,255);
+    if (n < 0) 
+         error("ERROR reading from socket");
+    printf("%s\n",buffer);
+    */
+    close(sockfd);
+    return 1;
+}
+
+
+int sendFile(int fd, const char* directory, const char* filename)
 {
+	char fullpath[1024];
+	unsigned char buffer[1024];
+	int read_size = 0;
+	int write_size = 0;
 
+	strcpy(fullpath,directory);
+	strcat(fullpath, filename);
 
+	int readfd = open(fullpath, O_RDONLY);
+	if(readfd == 0){
+		perror("Al leer archivo (104)");
+		return 0;
+	}
 
-printf("Elija una opcion \n");
-printf("1- Ver el listado de usuarios conectados \n");	
-printf("2- Enviar un archivo \n");
-printf("3- Salir del programa \n");
-int Opcion = getchar();
+	lseek(readfd, 0, SEEK_SET);
+		
+	while((read_size = read(readfd, buffer, 1024)) > 0)
+	{
+		write_size = write(fd, buffer, read_size);
+		if(write_size == -1)
+		{
+			perror("Al escribir en fd (105)");
+			break;
+		}
+	}
 
-switch(Opcion)
-{
-	case '1':
-	//Muestra listado de usuarios conectados, tienen que estar en una lista
-	break;
+	if(read_size < 0)
+	{
+		perror("Al leer archivo (106)");		
+	}
 	
-	case '2':
-	//Elije cliente y le envia un archivo
-	break;
-
-	case '3':
-	printf("Saliendo del cliente \n");
-	exit(0);
-	break;
-
-	default:
-	break;
+	close(readfd);
+	return 1;
 }
-return NULL;
+
+int getFileList(int fd, const char* directory)
+{
+
+	struct dirent* direntry;
+	struct stat statinfo;	    
+ 	DIR* dir;
+
+ 	dir = opendir(directory); //TODO recibirlo por argumento.
+
+ 	if(dir == NULL){
+ 		perror("Al abrir directorio (100)"); 		
+ 		return 0;
+ 	}
+
+ 	direntry = readdir(dir);
+	if(direntry == NULL){
+		perror("Al leer directorio (101)");
+		closedir(dir);
+		return 0;
+	}
+
+//statinfo = (struct stat*) malloc(sizeof(struct stat));
+	char fullpath[1024];
+	char buffer[1024];
+
+
+	while(direntry != NULL){		
+		if(strcmp(direntry->d_name, ".") != 0 &&  strcmp(direntry->d_name, "..") != 0)
+		{
+			strcpy(fullpath,directory);
+			strcat(fullpath, direntry->d_name);
+
+			if(stat(fullpath, &statinfo) == -1){
+				perror("Al obtener informacion(103)");	
+			}else{
+				sprintf(buffer,"%s\t%lld\n\0" ,direntry->d_name,(long long) statinfo.st_size);
+				write(fd, buffer, strlen(buffer));
+			} 	
+		}
+
+		direntry = readdir(dir);			
+	}
+	
+	sprintf(buffer, "\n\0");
+	write(fd, buffer, strlen(buffer));
+
+	closedir(dir);
+//	free(statinfo);
+	return 1;	
 }
