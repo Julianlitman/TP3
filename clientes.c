@@ -10,16 +10,9 @@
 void borrar_clientes(nodo_clientes **clientes)
 {
 	nodo_clientes *a_borrar;
-
 	while(*clientes != NULL)
 	{
-		cl = (*clientes)->cl;
-		while(cl != NULL)
-		{
-			cl_borrar = cl;
-			cl = cl->sig;
-			free(cl_borrar);
-		}
+
 		a_borrar = *clientes;
 		*clientes = (*clientes)->sig;
 		free(a_borrar);
@@ -33,11 +26,14 @@ void borrar_clientes(nodo_clientes **clientes)
 nodo_clientes *crear_cliente(int id)
 {
 	nodo_clientes *a;
-	a = (nodo_clientes*)mclloc(sizeof(nodo_clientes));
+	a = (nodo_clientes*)malloc(sizeof(nodo_clientes));
 	a->id = id;
-	strcpy(a->nombre, nombre);
+	a->otro_id = 0;
+	a->estado = 0;
+	a->tamano = 0;
+	a->tamano_restante = 0;
+	a->buffer_pos = 0;
 	a->sig = NULL;
-	a->cl = NULL;
 	return a;
 }
 
@@ -47,7 +43,7 @@ nodo_clientes *crear_cliente(int id)
 */
 void agregar_cliente(nodo_clientes **clientes, nodo_clientes *nuevo_cliente)
 {
-	nodo_clientes un_cliente;
+	nodo_clientes* un_cliente;
 	if(*clientes == NULL)
     {
         *clientes = nuevo_cliente;
@@ -61,7 +57,7 @@ void agregar_cliente(nodo_clientes **clientes, nodo_clientes *nuevo_cliente)
     	}
 
 	    un_cliente->sig = nuevo_cliente;
-	    nuevo_cliente->sig = null;
+	    nuevo_cliente->sig = NULL;
         
     }
 }
@@ -69,13 +65,15 @@ void agregar_cliente(nodo_clientes **clientes, nodo_clientes *nuevo_cliente)
 
 void quitar_cliente(nodo_clientes **cliente, int id)
 {
-	nodo_clientes un_cliente; 
-	if(*cliente == NULL){
+	nodo_clientes* un_cliente; 
+	if(*cliente == NULL)
+	{
 		return;
 	}
-	else if(*cliente->id == id){
+	else if((*cliente)->id == id)
+	{
 		un_cliente = *cliente;
-		cliente = un_cliente->sig;
+		*cliente = un_cliente->sig;
 		free(un_cliente);
 		return; 
 	}
@@ -90,7 +88,7 @@ void quitar_cliente(nodo_clientes **cliente, int id)
 
 	if(un_cliente->sig != NULL)
 	{
-		nodo_clientes otro_cliente;
+		nodo_clientes* otro_cliente;
 
 		otro_cliente = un_cliente->sig;
 	    un_cliente->sig = otro_cliente->sig;
@@ -99,7 +97,7 @@ void quitar_cliente(nodo_clientes **cliente, int id)
 	}
 	
 
-	return *clientes;	
+	return;	
 }
 
 
@@ -123,16 +121,19 @@ nodo_clientes *buscar_cliente(nodo_clientes *clientes, int id)
 /**
 *   Lista clienteslibros de un cliente
 */
-void listar_cliente(nodo_clientes *cliente)
+void listar_clientes(nodo_clientes *cliente)
 {
 	
-	
-	while(cl != NULL)
+	printf("Imprimiendo clientes \n");
+	while(cliente != NULL)
 	{
 		printf("ID: %d\n",cliente->id);
 		printf("otro_cliente: %d\n",cliente->otro_id);
 		printf("Estado: %d\n",cliente->estado);
+		printf("Tamaño: %d\n",cliente->tamano);
 		printf("\n");
-		cl = ->sig;
+		cliente = cliente->sig;
+	}
+	
 	return;
 }

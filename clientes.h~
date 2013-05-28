@@ -1,6 +1,6 @@
 #ifndef CLIENTES_H_INCLUDED
 #define CLIENTES_H_INCLUDED
-#include "defines.h"
+
 typedef struct clientes
 {
 	int id;
@@ -8,8 +8,6 @@ typedef struct clientes
 	int estado;
 	int tamano;
 	int tamano_restante;
-	int buffer_pos; //Hasta donde escribio
-	char buffer [TAMANO_BUFFER_CLIENTE];
 	struct clientes *sig;
 }nodo_clientes;
 

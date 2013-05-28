@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include "defines.h"
 
 //#include <sys/socket.h>
 //#include <netinet/in.h>
