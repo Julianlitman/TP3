@@ -16,43 +16,16 @@
 // select => 
 #include <sys/time.h>
 #include <sys/select.h>
-#include "clientes.h"
-#include "defines.h"
-#include "paquetes.h"
+// agrego h
+#include "mensajeria.h"
 
 int tcp_socket_server, udp_socket_server, unix_socket_server, maxfd;
 fd_set readset, tempset;
-nodo_clientes* clientes_conectados;
+
+
 void al_conectar_cliente(int id);
 void al_desconectar_cliente(int id);
 
-
-void procesar_buffer_cliente(nodo_cliente* un_cliente)
-{
-  while( un_cliente->buffer_pos > 12)
-  {
-  
-    int longitud_paquete = (int)(un_cliente->buffer[9]);
-    int longitud_total = longitud_paquete + 12; //12 es el header
-    if(longitud_total < un_cliente->buffer_pos)
-    {
-      struct paquete un_paquete = crear_paquete(un_cliente->buffer);  
-      
-      char [TAMANO_BUFFER_CLIENTE] buffer_aux;
-      
-      un_cliente->buffer_pos = un_cliente->buffer_pos - longitud_total;
-      memcpy(buffer_aux,un_cliente->buffer[longitud_total],un_cliente->buffer_pos);
-      memcpy(un_cliente->buffer,buffer_aux, un_cliente->buffer_pos);    
-      //Llamada al evento se recibio un paquete HACER el metodo de adentro destruye el paquete HACER
-    }
-    else
-    {
-      break;
-    }
-
-
-  }
-}
 void logger(const char *text) {
   printf("%s\n", text);
 
@@ -208,41 +181,6 @@ void read_udp_message(){
   // recvfrom(s, buf, BUFLEN, 0, &si_other, &slen)
 }
 
-int read_message(int j){
-  logger("New message");
-  int result;
-  char buffer[1024];
-   do 
-   {
-      
-      result = recv(j, buffer , MAX_BUFFER_SIZE, 0);
-      
-      if (result > 0)
-      {
-        //busco cliente y le mando lo que tiene el buffer al buffer del cliente
-        nodo_clientes* un_cliente;
-        un_cliente = buscar_cliente(clientes_conectados, j);
-        if(un_cliente->buffer_pos + result > TAMANO_BUFFER_CLIENTE)
-        {
-          printf("Error: Se leyo mas de lo que el buffer puede recibir \n");
-          exit(EXIT_FAILURE);
-        }
-      
-        memcpy(un_cliente->buffer + un_cliente->buffer_pos, buffer, result);
-        un_cliente->buffer_pos = un_cliente->buffer_pos + result;
-
-        procesar_buffer_cliente(un_cliente);
-
-      }
-      else
-      {
-          printf("No recibi nada \n");
-      }
-   
-   } while (result == -1 && errno == EINTR);
-
-   return result;  
-}
 
 void listen_and_accept_new_clients(){
   int j, result;
@@ -278,7 +216,10 @@ void listen_and_accept_new_clients(){
 
         for (j=0; j<maxfd+1; j++) {
           if (FD_ISSET(j, &tempset)) {
-            int resul = read_message(j);
+              nodo_clientes* un_cliente;
+              un_cliente = buscar_cliente(clientes_conectados, j);
+
+            int resul = read_message(un_cliente);
             if (resul == 0)
             {
               FD_CLR(j,&readset); 
@@ -314,9 +255,6 @@ void desserializar_mensaje()
 {
   //Desarma el mensaje para darselo preparado a al_recibir_mensaje
 }
-
-void al_recibir_mensaje(int id, int otro_id /* Falta algo */ );
-
 
 void stop_main(){
   stop_tcp_server();

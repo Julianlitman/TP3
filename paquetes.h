@@ -8,7 +8,11 @@ struct paquete
 	int user_dest;
 	int user_orig;
 	int longitud;
-	char contenido[TAMANO_CONTENIDO];
+};
+
+struct contenido
+{
+	char contenido[TAMANO_CONTENIDO];	
 };
 
 struct paquete *crear_paquete(char* buffer);

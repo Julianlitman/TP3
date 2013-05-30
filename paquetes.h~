@@ -11,5 +11,8 @@ struct paquete
 	char contenido[TAMANO_CONTENIDO];
 };
 
+struct paquete *crear_paquete(char* buffer);
+
+
 
 #endif // PAQUETES_H_INCLUDED

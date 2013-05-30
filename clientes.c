@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include "clientes.h"
-
+#include "paquetes.h"
 
 /**
 *   Borra la lista completa de clientes de memoria.
@@ -30,8 +32,6 @@ nodo_clientes *crear_cliente(int id)
 	a->id = id;
 	a->otro_id = 0;
 	a->estado = 0;
-	a->tamano = 0;
-	a->tamano_restante = 0;
 	a->buffer_pos = 0;
 	a->sig = NULL;
 	return a;
@@ -121,16 +121,53 @@ nodo_clientes *buscar_cliente(nodo_clientes *clientes, int id)
 /**
 *   Lista clienteslibros de un cliente
 */
+
+int imprimirRemoto(char* buffer,int fd)
+{
+	struct paquete response;
+	response.accion = ACCION_IMPRIMIR;
+	response.user_dest = fd;
+	response.longitud = strlen(buffer);
+	printf("Enviando al cliente: %d \n",fd);
+	send(fd, &response, sizeof(struct paquete), 0);
+	send(fd, &buffer, sizeof(struct contenido),0 );
+	return 1;
+
+}
+
+void listar_clientes_remoto(nodo_clientes *cliente, int fd)
+{
+	char buffer[100];
+	sprintf(buffer,"Imprimiendo clientes \n");
+	imprimirRemoto(buffer,fd);
+
+
+	while(cliente != NULL)
+	{
+		sprintf(buffer,"ID: %d\n",cliente->id);
+		imprimirRemoto(buffer,fd);
+		sprintf(buffer,"otro_cliente: %d\n",cliente->otro_id);
+		imprimirRemoto(buffer,fd);
+		sprintf(buffer,"Estado: %d\n",cliente->estado);
+		imprimirRemoto(buffer,fd);
+		sprintf(buffer,"\n");
+		imprimirRemoto(buffer,fd);
+		cliente = cliente->sig;
+	}
+	
+	return;
+}
+
 void listar_clientes(nodo_clientes *cliente)
 {
 	
 	printf("Imprimiendo clientes \n");
+
 	while(cliente != NULL)
 	{
 		printf("ID: %d\n",cliente->id);
 		printf("otro_cliente: %d\n",cliente->otro_id);
 		printf("Estado: %d\n",cliente->estado);
-		printf("Tamaño: %d\n",cliente->tamano);
 		printf("\n");
 		cliente = cliente->sig;
 	}

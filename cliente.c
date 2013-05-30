@@ -6,16 +6,20 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
-#include "defines.h"
+#include <netdb.h> 
+// agrego h
+#include "mensajeria.h"
 
 //#include <sys/socket.h>
 //#include <netinet/in.h>
-#include <netdb.h> 
+
 
 int getFileList(int fd, const char* directory);
 int sendFile(int fd, const char* directory, const char* filename);
 void logger(const char *text);
 int startClient();
+nodo_clientes un_cliente;
+
 
 int main()
 {
@@ -38,10 +42,9 @@ void logger(const char *text) {
 }
 
 int startClient(){
-	int sockfd, portno, n;
+	int sockfd, portno;
     struct sockaddr_in serv_addr;
     struct hostent *server;
-    char buffer[256];
 
 
     portno = 3456;
@@ -90,6 +93,23 @@ int startClient(){
          error("ERROR reading from socket");
     printf("%s\n",buffer);
     */
+
+    struct paquete un_paquete;
+    un_paquete.accion = ACCION_LISTAR;
+    un_paquete.user_dest = 0;
+	un_paquete.user_orig = 0;
+	un_paquete.longitud = 0;
+	int HOLA =  send(sockfd, &un_paquete, sizeof(struct paquete), 0 );
+	printf("%d si, funciono \n", HOLA);
+    
+
+	while(1)
+	{
+		int leido =read_message(&un_cliente);
+		printf("%d <-lei esto \n", leido);	
+		sleep(4);
+	}
+
     close(sockfd);
     return 1;
 }
@@ -132,7 +152,7 @@ int sendFile(int fd, const char* directory, const char* filename)
 	return 1;
 }
 
-int getFileList(int fd, const char* directory)
+/*int getFileList(int fd, const char* directory)
 {
 
 	struct dirent* direntry;
@@ -182,3 +202,4 @@ int getFileList(int fd, const char* directory)
 //	free(statinfo);
 	return 1;	
 }
+*/
