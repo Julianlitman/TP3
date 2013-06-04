@@ -12,6 +12,9 @@
 #include <sys/socket.h>
 #include <netdb.h> 
 #include <errno.h> 
+#include <sys/ipc.h>
+#include <pthread.h>
+#include <sys/msg.h>
 
 // agrego h
 #include "defines.h"

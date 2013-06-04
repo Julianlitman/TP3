@@ -13,11 +13,20 @@
 #define ACCION_CANCELAR  'C'
 #define ACCION_IMPRIMIR  'I'
 #define ACCION_LISTAR    'L'
+#define ACCION_SALIR    'S'
 #define TAMANO_MAXIMO_PAQUETE    1024
 #define TAMANO_HEADER_PAQUETE 	 13
 #define TAMANO_BODY_PAQUETE 	 1011
 #define TAMANO_BUFFER_CLIENTE    2048
-
 #define TAMANO_CONTENIDO 1011   
+
+
+struct mensaje
+{
+long mtype;
+char nombre[100];
+char accion;
+int user_dest;
+};
 
 #endif // DEFINES_H_INCLUDED

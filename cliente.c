@@ -13,16 +13,19 @@
 //#include <sys/socket.h>
 //#include <netinet/in.h>
 
-
+void* menu_cliente(void * arg);
 int getFileList(int fd, const char* directory);
 int sendFile(int fd, const char* directory, const char* filename);
 void logger(const char *text);
 int startClient();
 nodo_clientes un_cliente;
-
+int msgid;
 
 int main()
 {
+
+	msgid = msgget(IPC_PRIVATE,IPC_CREAT|0777);
+	printf("%ld, %ld, %ld, %ld \n",sizeof(int), sizeof(char), sizeof(struct paquete), sizeof(struct contenido));
 	startClient();
 /*    printf("Hello world!\n");
     
@@ -43,6 +46,9 @@ void logger(const char *text) {
 
 int startClient(){
 	int sockfd, portno;
+	pthread_t thid;
+	void * retval;
+
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
@@ -62,6 +68,7 @@ int startClient(){
         return 0;
     }
 
+
     bzero((char *) &serv_addr, sizeof(serv_addr));
     
     serv_addr.sin_family = AF_INET;
@@ -78,9 +85,13 @@ int startClient(){
         return 0;
 
 	}    
-    logger("ACA YA ESTOY CONECTADO!\n");
 
-/*
+	//meter thread
+    pthread_create(&thid,NULL, &menu_cliente, NULL);
+    logger("ACA YA ESTOY CONECTADO!\n");
+    //pthread_join(thid, &retval);
+
+/*	
     printf("Please enter the message: ");
     bzero(buffer,256);
     fgets(buffer,255,stdin);
@@ -93,21 +104,56 @@ int startClient(){
          error("ERROR reading from socket");
     printf("%s\n",buffer);
     */
+	un_cliente.id = sockfd;
+	un_cliente.buffer_pos = 0;
 
-    struct paquete un_paquete;
-    un_paquete.accion = ACCION_LISTAR;
-    un_paquete.user_dest = 0;
-	un_paquete.user_orig = 0;
-	un_paquete.longitud = 0;
-	int HOLA =  send(sockfd, &un_paquete, sizeof(struct paquete), 0 );
-	printf("%d si, funciono \n", HOLA);
-    
+	struct mensaje un_mensaje;
+	struct paquete un_paquete;
+	struct contenido un_contenido;
+        
 
 	while(1)
 	{
-		int leido =read_message(&un_cliente);
-		printf("%d <-lei esto \n", leido);	
-		sleep(4);
+				   	
+		int leido = read_message(&un_cliente);
+		//printf("%d <-lei esto \n", leido);	
+		int ret2 = msgrcv(msgid, &un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 1, 0 | IPC_NOWAIT); 
+		if (ret2 > 0)
+		{
+			switch(un_mensaje.accion)
+			{
+				case ACCION_LISTAR:
+				    un_paquete.accion = ACCION_LISTAR;
+				    un_paquete.user_dest = 0;
+					un_paquete.user_orig = sockfd;
+					un_paquete.longitud = 0;
+					send(sockfd, &un_paquete, sizeof(struct paquete), 0 );
+					send(sockfd, &un_contenido, sizeof(struct contenido), 0 );
+					break;
+
+				case ACCION_PEDIDO:
+				    un_paquete.accion = ACCION_PEDIDO;
+				    un_paquete.user_dest = un_mensaje.user_dest;
+					un_paquete.user_orig = sockfd;
+					un_paquete.longitud = strlen(un_mensaje.nombre);
+					strcpy(un_contenido.contenido,un_mensaje.nombre);
+					send(sockfd, &un_paquete, sizeof(struct paquete), 0 );
+					send(sockfd, &un_contenido, sizeof(struct contenido), 0 );	
+					break;
+
+				case ACCION_SALIR:
+					pthread_join(thid,NULL);
+					//Limpiar conexiones
+					exit(0);
+					break;
+
+			}
+		}
+
+		if(leido < 1) //me voy a dormir
+		{
+			sleep(1);
+		}
 	}
 
     close(sockfd);
@@ -203,3 +249,53 @@ int sendFile(int fd, const char* directory, const char* filename)
 	return 1;	
 }
 */
+void* menu_cliente(void * arg)
+{
+
+	int Opcion;
+	struct mensaje un_mensaje;
+	int ret;
+
+	while(1)
+	{
+
+		printf("Elija una opcion \n");
+		printf("1- Ver el listado de usuarios conectados \n");	
+		printf("2- Enviar un archivo \n");
+		printf("3- Salir del programa \n");
+		scanf("%d", &Opcion);
+		un_mensaje.mtype = 1; //(DESTINATARIO)
+
+
+		switch(Opcion)
+		{
+			case 1:
+				un_mensaje.accion = ACCION_LISTAR;
+				ret = msgsnd(msgid,&un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 0);
+				//Le resto lo que es obligatorio
+				//Muestra listado de usuarios conectados, tienen que estar en una lista
+				break;
+			
+			case 2:
+			//Elije cliente y le envia un archivo
+				printf("Ingrese el ID del destinatario \n");
+				scanf("%d", &un_mensaje.user_dest);
+				printf("Ingrese el nombre del archivo \n");
+				scanf("%s", &un_mensaje.nombre);
+				un_mensaje.accion = ACCION_PEDIDO;
+				ret = msgsnd(msgid,&un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 0);
+				break;
+
+			case 3:
+				un_mensaje.accion = ACCION_SALIR;
+				ret = msgsnd(msgid,&un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 0);
+				return NULL;
+				break;
+
+			default:
+				printf("Opcion no valida \n");
+				break;
+		}
+	}
+
+}

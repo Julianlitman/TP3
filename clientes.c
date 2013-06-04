@@ -121,18 +121,20 @@ nodo_clientes *buscar_cliente(nodo_clientes *clientes, int id)
 /**
 *   Lista clienteslibros de un cliente
 */
-
 int imprimirRemoto(char* buffer,int fd)
 {
+	struct contenido un_contenido;
+	memcpy(un_contenido.contenido, buffer, TAMANO_CONTENIDO);
+	
 	struct paquete response;
 	response.accion = ACCION_IMPRIMIR;
 	response.user_dest = fd;
 	response.longitud = strlen(buffer);
+
 	printf("Enviando al cliente: %d \n",fd);
 	send(fd, &response, sizeof(struct paquete), 0);
-	send(fd, &buffer, sizeof(struct contenido),0 );
+	send(fd, &un_contenido, sizeof(struct contenido), 0);
 	return 1;
-
 }
 
 void listar_clientes_remoto(nodo_clientes *cliente, int fd)

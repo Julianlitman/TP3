@@ -3,12 +3,28 @@
 
 void al_recibir_mensaje(nodo_clientes *un_cliente)
 {
+  struct cliente *cliente_dest:
   printf("%c <-accion",un_cliente->un_paquete.accion );
   switch(un_cliente->un_paquete.accion)
  {
  
  case ACCION_PEDIDO:
- 
+      if (un_cliente->estado == ESTADO_ESPERANDO)
+      {
+          cliente_dest = buscar_cliente(clientes_conectados,un_cliente->paquete.user_dest);
+          if (cliente_dest->estado == ESTADO_ESPERANDO)
+          {
+            un_cliente->estado = ESTADO_ENVIANDO;
+            cliente_dest->estado = ESTADO_RECIBIENDO;
+            un_paquete.accion = ACCION_LISTAR;
+            un_paquete.user_dest = 0;
+            un_paquete.user_orig = sockfd;
+            un_paquete.longitud = 0;
+            send(sockfd, &un_paquete, sizeof(struct paquete), 0 );
+            send(sockfd, &un_contenido, sizeof(struct contenido), 0 );
+          }
+      {  
+      }
    break;
 
  case ACCION_ECHO:   
@@ -53,7 +69,7 @@ int read_message(nodo_clientes* un_cliente){
         }
       }
    } while (result == -1 && errno == EINTR);
-   if(un_cliente->un_paquete.longitud + sizeof(struct paquete) == un_cliente->buffer_pos  && un_cliente->buffer_pos >= 0)
+   if(sizeof(struct contenido) + sizeof(struct paquete) == un_cliente->buffer_pos)
    {
 
     al_recibir_mensaje(un_cliente);

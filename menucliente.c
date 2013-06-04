@@ -14,15 +14,11 @@ int menu_cliente(void * arg);
 
 int menu_cliente(void * arg)
 {
-
-
-
 int Opcion;
 printf("Elija una opcion \n");
 printf("1- Ver el listado de usuarios conectados \n");	
 printf("2- Enviar un archivo \n");
 printf("3- Salir del programa \n");
-printf("%ld hola \n",sizeof(char));
 scanf("%d", &Opcion);
 
 switch(Opcion)
