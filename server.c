@@ -246,14 +246,26 @@ void al_conectar_cliente(int id)
 
 void al_desconectar_cliente(int id)
 {
+  nodo_clientes *un_cliente;
+  nodo_clientes *cliente_dest;
+  un_cliente = buscar_cliente(clientes_conectados,id);
+
+  if(un_cliente->otro_id > 0)
+  {
+    //Le avisa al otro cliente que cancele todo
+    cliente_dest = buscar_cliente(clientes_conectados,un_cliente->otro_id);
+    if(cliente_dest != NULL)
+    {
+      enviar_cancelar(0,cliente_dest->id);
+      cliente_dest->estado = ESTADO_ESPERANDO;
+      cliente_dest->otro_id = 0;
+    }
+  }
+
+  //Mandar un paquete al otro cliente 
   quitar_cliente(&clientes_conectados, id);
   printf("Se desconecto el cliente numero %d \n ", id);
   //FALTA HACER UN LOGGER CAPO
-}
-
-void desserializar_mensaje()
-{
-  //Desarma el mensaje para darselo preparado a al_recibir_mensaje
 }
 
 void stop_main(){

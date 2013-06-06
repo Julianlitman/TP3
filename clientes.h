@@ -7,6 +7,7 @@ typedef struct clientes
 {
 	int id;
 	int otro_id;
+	int fd_archivo;
 	int estado;
 	int buffer_pos; //Hasta donde escribio
 	struct paquete un_paquete;
