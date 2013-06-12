@@ -21,6 +21,18 @@ int startClient();
 nodo_clientes un_cliente;
 int msgid;
 
+void cancelar(){
+	if(un_cliente.estado == ESTADO_RECIBIENDO || un_cliente.estado == ESTADO_ENVIANDO)
+    {
+      close(un_cliente.fd_archivo);
+      if(un_cliente.estado == ESTADO_RECIBIENDO)
+      {
+          unlink(un_cliente.nombre_archivo);  
+      }
+	  enviar_cancelar(&un_cliente);
+    }
+}
+
 int main()
 {
 
@@ -43,11 +55,43 @@ int main()
 void logger(const char *text) {
   printf("%s\n", text);
 }
+void enviar_proximo_paquete(nodo_clientes *un_cliente)
+{
+	struct paquete un_paquete;
+	struct contenido un_contenido;
+	int leido = read(un_cliente->fd_archivo,un_contenido.contenido,TAMANO_BODY_PAQUETE);
+	printf("Lei: %d \n", leido);
+	if (leido > 0)
+	{
+
+	  un_paquete.accion = ACCION_MANDAR;
+	  un_paquete.user_orig = un_cliente->id;
+	  un_paquete.user_dest = un_cliente->otro_id;
+	  un_paquete.longitud = leido;
+	  send(un_cliente->id, &un_paquete, sizeof(struct paquete), 0);
+	  send(un_cliente->id, &un_contenido, sizeof(struct contenido), 0);
+	}
+	else if(leido == 0)
+	{
+	  printf("Termine de leer");
+	  un_cliente->estado = ESTADO_ESPERANDO;
+	  un_paquete.accion = ACCION_FIN;
+	  un_paquete.user_orig = un_cliente->id;
+	  un_paquete.user_dest = un_cliente->otro_id;
+	  un_paquete.longitud = 0;
+	  send(un_cliente->id, &un_paquete, sizeof(struct paquete), 0);
+	  send(un_cliente->id, &un_contenido, sizeof(struct contenido), 0); 
+	}
+	else if(leido == -1)
+	{
+		cancelar();
+	}
+}
 
 int startClient(){
 	int sockfd, portno;
 	pthread_t thid;
-	void * retval;
+	
 
     struct sockaddr_in serv_addr;
     struct hostent *server;
@@ -104,22 +148,31 @@ int startClient(){
          error("ERROR reading from socket");
     printf("%s\n",buffer);
     */
+    un_cliente.estado = ESTADO_ESPERANDO;
 	un_cliente.id = sockfd;
 	un_cliente.buffer_pos = 0;
 
 	struct mensaje un_mensaje;
 	struct paquete un_paquete;
 	struct contenido un_contenido;
-        
+    int nada_para_hacer = 1;   
 
 	while(1)
 	{
-				   	
+		nada_para_hacer = 1;				   	
 		int leido = read_message(&un_cliente);
+		if (leido > 0 )
+		{
+			printf("pude leer algo \n");
+			nada_para_hacer = 0;
+		}
 		//printf("%d <-lei esto \n", leido);	
 		int ret2 = msgrcv(msgid, &un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 1, 0 | IPC_NOWAIT); 
 		if (ret2 > 0)
 		{
+			printf("Llego la opcion del menu \n");
+
+			nada_para_hacer  = 0;
 			switch(un_mensaje.accion)
 			{
 				case ACCION_LISTAR:
@@ -132,13 +185,21 @@ int startClient(){
 					break;
 
 				case ACCION_PEDIDO:
+				    if(un_cliente.estado != ESTADO_ESPERANDO)
+				    {
+				    	printf("No puede pedir si no esta esperando. Mi estado es: %d \n",un_cliente.estado);
+				    	break;
+				    }
+				    un_cliente.estado = ESTADO_ESPERANDO_ENVIAR;
 				    un_paquete.accion = ACCION_PEDIDO;
 				    un_paquete.user_dest = un_mensaje.user_dest;
 					un_paquete.user_orig = sockfd;
+					strcpy(un_cliente.nombre_archivo,un_mensaje.nombre);
 					un_paquete.longitud = strlen(un_mensaje.nombre);
 					strcpy(un_contenido.contenido,un_mensaje.nombre);
 					send(sockfd, &un_paquete, sizeof(struct paquete), 0 );
 					send(sockfd, &un_contenido, sizeof(struct contenido), 0 );	
+					
 					break;
 
 				case ACCION_SALIR:
@@ -147,13 +208,28 @@ int startClient(){
 					exit(0);
 					break;
 
-			}
-		}
+				case ACCION_CANCELAR:
+					cancelar();
+					break;		
 
-		if(leido < 1) //me voy a dormir
-		{
-			sleep(1);
+			}
+
 		}
+		if (un_cliente.estado == ESTADO_ENVIANDO )
+		{
+				printf("Estoy enviando un paquete \n");
+				enviar_proximo_paquete(&un_cliente);
+				nada_para_hacer = 0;
+			//Manda un paquete
+
+		}
+		//
+		//HACER NADA PARA HACER
+
+			if (nada_para_hacer == 1)
+			{
+				sleep(1);
+			}
 	}
 
     close(sockfd);
@@ -254,7 +330,6 @@ void* menu_cliente(void * arg)
 
 	int Opcion;
 	struct mensaje un_mensaje;
-	int ret;
 
 	while(1)
 	{
@@ -262,7 +337,8 @@ void* menu_cliente(void * arg)
 		printf("Elija una opcion \n");
 		printf("1- Ver el listado de usuarios conectados \n");	
 		printf("2- Enviar un archivo \n");
-		printf("3- Salir del programa \n");
+		printf("3- Cancelar transaccion \n");
+		printf("4- Salir del programa \n");
 		scanf("%d", &Opcion);
 		un_mensaje.mtype = 1; //(DESTINATARIO)
 
@@ -271,7 +347,7 @@ void* menu_cliente(void * arg)
 		{
 			case 1:
 				un_mensaje.accion = ACCION_LISTAR;
-				ret = msgsnd(msgid,&un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 0);
+				msgsnd(msgid,&un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 0);
 				//Le resto lo que es obligatorio
 				//Muestra listado de usuarios conectados, tienen que estar en una lista
 				break;
@@ -281,14 +357,19 @@ void* menu_cliente(void * arg)
 				printf("Ingrese el ID del destinatario \n");
 				scanf("%d", &un_mensaje.user_dest);
 				printf("Ingrese el nombre del archivo \n");
-				scanf("%s", &un_mensaje.nombre);
+				scanf("%s", un_mensaje.nombre);
 				un_mensaje.accion = ACCION_PEDIDO;
-				ret = msgsnd(msgid,&un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 0);
+				msgsnd(msgid,&un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 0);
 				break;
 
 			case 3:
+				un_mensaje.accion = ACCION_CANCELAR;
+				msgsnd(msgid,&un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 0);
+				break;
+	
+			case 4:
 				un_mensaje.accion = ACCION_SALIR;
-				ret = msgsnd(msgid,&un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 0);
+				msgsnd(msgid,&un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 0);
 				return NULL;
 				break;
 

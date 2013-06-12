@@ -10,6 +10,8 @@ typedef struct clientes
 	int fd_archivo;
 	int estado;
 	int buffer_pos; //Hasta donde escribio
+	//HACER IP
+	char nombre_archivo[TAMANO_NOMBRE_ARCHIVO];
 	struct paquete un_paquete;
 	struct contenido un_contenido;
 	struct clientes *sig;

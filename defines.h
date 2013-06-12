@@ -8,6 +8,7 @@
 #define ESTADO_ENVIANDO   2
 #define ESTADO_ESPERANDO  3
 #define ESTADO_CANCELANDO 4
+#define ESTADO_ESPERANDO_ENVIAR 5
 #define ACCION_PEDIDO    'P'
 #define ACCION_ECHO      'E'
 #define ACCION_CANCELAR  'C'
@@ -18,8 +19,7 @@
 #define ACCION_FIN    	 'F'
 #define ACCION_MANDAR    'M'
 #define ACCION_EMPEZAR   'J'
-
-
+#define TAMANO_NOMBRE_ARCHIVO    100
 #define TAMANO_MAXIMO_PAQUETE    1024
 #define TAMANO_HEADER_PAQUETE 	 13
 #define TAMANO_BODY_PAQUETE 	 1011

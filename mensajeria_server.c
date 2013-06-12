@@ -6,7 +6,7 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
   struct clientes *cliente_dest = NULL;
   struct paquete un_paquete;
   struct contenido un_contenido;
-  char[100] linea_buffer;
+  char linea_buffer[100];
   printf("%c <-accion",un_cliente->un_paquete.accion );
   switch(un_cliente->un_paquete.accion)
   {
@@ -52,8 +52,10 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
       if (un_cliente->estado == ESTADO_ENVIANDO)
       {
           cliente_dest = buscar_cliente(clientes_conectados,un_cliente->otro_id);
+          printf("soy el id del cliente destino -> %d \n", cliente_dest->id);
           if (cliente_dest != NULL && cliente_dest->estado == ESTADO_RECIBIENDO)
           {
+            printf("Deberia enviar aca abajo  \n");
             send(cliente_dest->id, &un_cliente->un_paquete, sizeof(struct paquete), 0 );
             send(cliente_dest->id, &un_cliente->un_contenido, sizeof(struct contenido), 0 );
 
@@ -78,7 +80,7 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
             if (cliente_dest != NULL)
             {
              //Lo hice funcion_cancelar
-              enviar_cancelar(un_cliente->id,cliente_dest->id);
+              enviar_cancelar(un_cliente);
               cliente_dest->estado = ESTADO_ESPERANDO;
               cliente_dest->otro_id = 0;
             }

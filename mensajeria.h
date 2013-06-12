@@ -24,6 +24,7 @@
 void al_recibir_mensaje(nodo_clientes *un_cliente);
 int read_message(nodo_clientes* un_cliente);
 
+void enviar_cancelar(nodo_clientes *un_cliente);
 
 
 

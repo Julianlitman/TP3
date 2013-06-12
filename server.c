@@ -252,13 +252,12 @@ void al_desconectar_cliente(int id)
 
   if(un_cliente->otro_id > 0)
   {
-    //Le avisa al otro cliente que cancele todo
     cliente_dest = buscar_cliente(clientes_conectados,un_cliente->otro_id);
+    //Le avisa al otro cliente que cancele todo
     if(cliente_dest != NULL)
     {
-      enviar_cancelar(0,cliente_dest->id);
+      enviar_cancelar(un_cliente);
       cliente_dest->estado = ESTADO_ESPERANDO;
-      cliente_dest->otro_id = 0;
     }
   }
 
