@@ -55,10 +55,9 @@ void enviar_proximo_paquete(nodo_clientes *un_cliente)
 	struct paquete un_paquete;
 	struct contenido un_contenido;
 	int leido = read(un_cliente->fd_archivo,un_contenido.contenido,TAMANO_BODY_PAQUETE);
-	printf("Lei: %d \n", leido);
 	if (leido > 0)
 	{
-
+	  printf(".");
 	  un_paquete.accion = ACCION_MANDAR;
 	  un_paquete.user_orig = un_cliente->id;
 	  un_paquete.user_dest = un_cliente->otro_id;
@@ -68,7 +67,7 @@ void enviar_proximo_paquete(nodo_clientes *un_cliente)
 	}
 	else if(leido == 0)
 	{
-	  printf("Termine de leer");
+	  printf("Fin de transmisión \n");
 	  un_cliente->estado = ESTADO_ESPERANDO;
 	  un_paquete.accion = ACCION_FIN;
 	  un_paquete.user_orig = un_cliente->id;
@@ -175,6 +174,7 @@ int startClient(){
 				    }
 				    un_cliente.estado = ESTADO_ESPERANDO_ENVIAR;
 				    un_paquete.accion = ACCION_PEDIDO;
+				    un_cliente.otro_id = un_mensaje.user_dest;
 				    un_paquete.user_dest = un_mensaje.user_dest;
 					un_paquete.user_orig = sockfd;
 					strcpy(un_cliente.nombre_archivo,un_mensaje.nombre);
@@ -201,7 +201,6 @@ int startClient(){
 		}
 		if (un_cliente.estado == ESTADO_ENVIANDO )
 		{
-				printf("Estoy enviando un paquete \n");
 				enviar_proximo_paquete(&un_cliente);
 				nada_para_hacer = 0;
 			//Manda un paquete

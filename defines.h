@@ -27,6 +27,7 @@
 #define TAMANO_CONTENIDO 1011   
 
 
+
 struct mensaje
 {
 long mtype;

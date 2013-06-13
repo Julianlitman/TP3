@@ -15,6 +15,8 @@
 #include <sys/ipc.h>
 #include <pthread.h>
 #include <sys/msg.h>
+#include <signal.h>
+
 
 // agrego h
 #include "defines.h"

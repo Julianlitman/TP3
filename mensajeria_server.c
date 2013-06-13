@@ -1,13 +1,26 @@
 #include "mensajeria.h"
 
 
+void enviar_cancelar(nodo_clientes *un_cliente)
+{
+  printf("cliente destino %d \n",un_cliente->otro_id);
+  struct paquete un_paquete;
+  struct contenido un_contenido;
+  un_paquete.accion = ACCION_CANCELAR;
+  un_paquete.user_dest = un_cliente->otro_id;
+  un_paquete.user_orig = un_cliente->id;
+  un_cliente->estado = ESTADO_ESPERANDO;
+  un_paquete.longitud = 0;
+  send(un_cliente->otro_id, &un_paquete, sizeof(struct paquete), 0 );
+  send(un_cliente->otro_id, &un_contenido, sizeof(struct contenido), 0 );   
+}
+
 void al_recibir_mensaje(nodo_clientes *un_cliente)
 {
   struct clientes *cliente_dest = NULL;
   struct paquete un_paquete;
   struct contenido un_contenido;
   char linea_buffer[100];
-  printf("%c <-accion",un_cliente->un_paquete.accion );
   switch(un_cliente->un_paquete.accion)
   {
  
@@ -42,6 +55,7 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
 
             sprintf(linea_buffer,"No se puede realizar la transaccion solicitada (100) \n");
             imprimirRemoto(linea_buffer,un_cliente->id);
+            enviar_cancelar(un_cliente);
             
           }
         
@@ -55,7 +69,6 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
           printf("soy el id del cliente destino -> %d \n", cliente_dest->id);
           if (cliente_dest != NULL && cliente_dest->estado == ESTADO_RECIBIENDO)
           {
-            printf("Deberia enviar aca abajo  \n");
             send(cliente_dest->id, &un_cliente->un_paquete, sizeof(struct paquete), 0 );
             send(cliente_dest->id, &un_cliente->un_contenido, sizeof(struct contenido), 0 );
 
@@ -74,13 +87,13 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
     if (un_cliente->otro_id > 0)
       {
             cliente_dest = buscar_cliente(clientes_conectados,un_cliente->otro_id);
-            un_cliente->otro_id = 0;
             un_cliente->estado = ESTADO_ESPERANDO;
             
             if (cliente_dest != NULL)
             {
              //Lo hice funcion_cancelar
               enviar_cancelar(un_cliente);
+              un_cliente->otro_id = 0;
               cliente_dest->estado = ESTADO_ESPERANDO;
               cliente_dest->otro_id = 0;
             }
@@ -97,6 +110,7 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
           cliente_dest = buscar_cliente(clientes_conectados,un_cliente->otro_id);
           if (cliente_dest != NULL && cliente_dest->estado == ESTADO_RECIBIENDO)
           {
+            un_cliente->cant_archivos += 1;
             cliente_dest->otro_id = 0;
             cliente_dest->estado = ESTADO_ESPERANDO;
             un_cliente->otro_id = 0;

@@ -9,6 +9,7 @@ typedef struct clientes
 	int otro_id;
 	int fd_archivo;
 	int estado;
+	int cant_archivos;
 	int buffer_pos; //Hasta donde escribio
 	//HACER IP
 	char nombre_archivo[TAMANO_NOMBRE_ARCHIVO];

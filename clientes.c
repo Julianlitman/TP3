@@ -14,7 +14,6 @@ void borrar_clientes(nodo_clientes **clientes)
 	nodo_clientes *a_borrar;
 	while(*clientes != NULL)
 	{
-
 		a_borrar = *clientes;
 		*clientes = (*clientes)->sig;
 		free(a_borrar);
@@ -32,6 +31,7 @@ nodo_clientes *crear_cliente(int id)
 	a->id = id;
 	a->otro_id = 0;
 	a->estado = 0;
+	a->cant_archivos = 0;
 	a->buffer_pos = 0;
 	a->sig = NULL;
 	return a;
@@ -146,13 +146,7 @@ void listar_clientes_remoto(nodo_clientes *cliente, int fd)
 
 	while(cliente != NULL)
 	{
-		sprintf(buffer,"ID: %d\n",cliente->id);
-		imprimirRemoto(buffer,fd);
-		sprintf(buffer,"otro_cliente: %d\n",cliente->otro_id);
-		imprimirRemoto(buffer,fd);
-		sprintf(buffer,"Estado: %d\n",cliente->estado);
-		imprimirRemoto(buffer,fd);
-		sprintf(buffer,"\n");
+		sprintf(buffer,"ID: %d Archivos enviados: %d  Estado: %d   \n ",cliente->id ,cliente->cant_archivos, cliente->estado);
 		imprimirRemoto(buffer,fd);
 		cliente = cliente->sig;
 	}

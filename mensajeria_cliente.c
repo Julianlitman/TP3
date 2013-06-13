@@ -1,5 +1,19 @@
 #include "mensajeria.h"
 
+void enviar_cancelar(nodo_clientes *un_cliente)
+{
+  printf("cliente destino %d \n",un_cliente->otro_id);
+  struct paquete un_paquete;
+  struct contenido un_contenido;
+  un_paquete.accion = ACCION_CANCELAR;
+  un_paquete.user_dest = un_cliente->otro_id;
+  un_paquete.user_orig = un_cliente->id;
+  un_cliente->estado = ESTADO_ESPERANDO;
+  un_paquete.longitud = 0;
+  send(un_cliente->id, &un_paquete, sizeof(struct paquete), 0 );
+  send(un_cliente->id, &un_contenido, sizeof(struct contenido), 0 );   
+}
+
 void al_recibir_accion_mandar(nodo_clientes *un_cliente)
 {
     int escribi = 0;
@@ -25,7 +39,6 @@ void al_recibir_accion_mandar(nodo_clientes *un_cliente)
 
 void al_recibir_mensaje(nodo_clientes *un_cliente)
 {
-   printf("%c <-accion cliente\n",un_cliente->un_paquete.accion );
 
   switch(un_cliente->un_paquete.accion)
  {
@@ -80,6 +93,7 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
       else
       {
         perror("soy el error de cuando tratan de abrir el fd \n");
+        enviar_cancelar(un_cliente);
       }
     }
       enviar_cancelar(un_cliente); 
