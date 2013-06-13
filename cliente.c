@@ -13,13 +13,14 @@
 //#include <sys/socket.h>
 //#include <netinet/in.h>
 
+void cerrar_todo(int signal);
 void* menu_cliente(void * arg);
 int getFileList(int fd, const char* directory);
 int sendFile(int fd, const char* directory, const char* filename);
 void logger(const char *text);
 int startClient();
 nodo_clientes un_cliente;
-int msgid;
+int msgid = 0;
 
 void cancelar(){
 	if(un_cliente.estado == ESTADO_RECIBIENDO || un_cliente.estado == ESTADO_ENVIANDO)
@@ -29,26 +30,20 @@ void cancelar(){
       {
           unlink(un_cliente.nombre_archivo);  
       }
-	  enviar_cancelar(&un_cliente);
     }
 }
 
 int main()
 {
 
+	signal(SIGINT,cerrar_todo);
 	msgid = msgget(IPC_PRIVATE,IPC_CREAT|0777);
 	printf("%ld, %ld, %ld, %ld \n",sizeof(int), sizeof(char), sizeof(struct paquete), sizeof(struct contenido));
 	startClient();
-/*    printf("Hello world!\n");
-    
-    creat("test_tp.txt", 0777);
-	//fd file descriptor. -1 error.
-	int fd = open("test_tp.txt", O_RDWR | O_TRUNC);    
-    getFileList(fd,"./");
+	//Cierro la cola de mensajes
 
-    sendFile(fd,"./","salida.txt");
-    close(fd);
-*/
+
+	msgctl(msgid,IPC_RMID,0);
     return EXIT_SUCCESS;
 }
 
@@ -84,7 +79,9 @@ void enviar_proximo_paquete(nodo_clientes *un_cliente)
 	}
 	else if(leido == -1)
 	{
+		//Da un error la lectura del archivo
 		cancelar();
+		enviar_cancelar(un_cliente);
 	}
 }
 
@@ -133,21 +130,6 @@ int startClient(){
 	//meter thread
     pthread_create(&thid,NULL, &menu_cliente, NULL);
     logger("ACA YA ESTOY CONECTADO!\n");
-    //pthread_join(thid, &retval);
-
-/*	
-    printf("Please enter the message: ");
-    bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    n = write(sockfd,buffer,strlen(buffer));
-    if (n < 0) 
-         error("ERROR writing to socket");
-    bzero(buffer,256);
-    n = read(sockfd,buffer,255);
-    if (n < 0) 
-         error("ERROR reading from socket");
-    printf("%s\n",buffer);
-    */
     un_cliente.estado = ESTADO_ESPERANDO;
 	un_cliente.id = sockfd;
 	un_cliente.buffer_pos = 0;
@@ -156,21 +138,22 @@ int startClient(){
 	struct paquete un_paquete;
 	struct contenido un_contenido;
     int nada_para_hacer = 1;   
-
-	while(1)
+    int salir = 0;
+	while(salir == 0)
 	{
 		nada_para_hacer = 1;				   	
 		int leido = read_message(&un_cliente);
 		if (leido > 0 )
 		{
-			printf("pude leer algo \n");
 			nada_para_hacer = 0;
+		}else if (leido == 0)
+		{
+			break;
 		}
 		//printf("%d <-lei esto \n", leido);	
 		int ret2 = msgrcv(msgid, &un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 1, 0 | IPC_NOWAIT); 
 		if (ret2 > 0)
 		{
-			printf("Llego la opcion del menu \n");
 
 			nada_para_hacer  = 0;
 			switch(un_mensaje.accion)
@@ -203,13 +186,14 @@ int startClient(){
 					break;
 
 				case ACCION_SALIR:
-					pthread_join(thid,NULL);
 					//Limpiar conexiones
-					exit(0);
+					salir = 1;
+					
 					break;
 
 				case ACCION_CANCELAR:
 					cancelar();
+					enviar_cancelar(&un_cliente);
 					break;		
 
 			}
@@ -224,107 +208,21 @@ int startClient(){
 
 		}
 		//
-		//HACER NADA PARA HACER
 
 			if (nada_para_hacer == 1)
 			{
 				sleep(1);
 			}
 	}
-
-    close(sockfd);
+	close(sockfd);
+	pthread_join(thid,NULL);
     return 1;
 }
 
 
-int sendFile(int fd, const char* directory, const char* filename)
-{
-	char fullpath[1024];
-	unsigned char buffer[1024];
-	int read_size = 0;
-	int write_size = 0;
-
-	strcpy(fullpath,directory);
-	strcat(fullpath, filename);
-
-	int readfd = open(fullpath, O_RDONLY);
-	if(readfd == 0){
-		perror("Al leer archivo (104)");
-		return 0;
-	}
-
-	lseek(readfd, 0, SEEK_SET);
-		
-	while((read_size = read(readfd, buffer, 1024)) > 0)
-	{
-		write_size = write(fd, buffer, read_size);
-		if(write_size == -1)
-		{
-			perror("Al escribir en fd (105)");
-			break;
-		}
-	}
-
-	if(read_size < 0)
-	{
-		perror("Al leer archivo (106)");		
-	}
-	
-	close(readfd);
-	return 1;
-}
-
-/*int getFileList(int fd, const char* directory)
-{
-
-	struct dirent* direntry;
-	struct stat statinfo;	    
- 	DIR* dir;
-
- 	dir = opendir(directory); //TODO recibirlo por argumento.
-
- 	if(dir == NULL){
- 		perror("Al abrir directorio (100)"); 		
- 		return 0;
- 	}
-
- 	direntry = readdir(dir);
-	if(direntry == NULL){
-		perror("Al leer directorio (101)");
-		closedir(dir);
-		return 0;
-	}
-
-//statinfo = (struct stat*) malloc(sizeof(struct stat));
-	char fullpath[1024];
-	char buffer[1024];
 
 
-	while(direntry != NULL){		
-		if(strcmp(direntry->d_name, ".") != 0 &&  strcmp(direntry->d_name, "..") != 0)
-		{
-			strcpy(fullpath,directory);
-			strcat(fullpath, direntry->d_name);
 
-			if(stat(fullpath, &statinfo) == -1){
-				perror("Al obtener informacion(103)");	
-			}else{
-				sprintf(buffer,"%s\t%lld\n\0" ,direntry->d_name,(long long) statinfo.st_size);
-				write(fd, buffer, strlen(buffer));
-			} 	
-		}
-
-		direntry = readdir(dir);			
-	}
-	
-	sprintf(buffer, "\n\0");
-	write(fd, buffer, strlen(buffer));
-
-	closedir(dir);
-//	free(statinfo);
-	return 1;	
-}
-*/
 void* menu_cliente(void * arg)
 {
 
@@ -379,4 +277,23 @@ void* menu_cliente(void * arg)
 		}
 	}
 
+}
+
+void cerrar_todo(int signal)
+{
+	//Cierra el archivo si esta abierto
+	//Cierra conexion, cierra cola de mensajes, cierra socket y un exit con error
+	printf("Cerrando todas las conexiones... \n");
+	cancelar();
+	//Cola de mensajes
+	if (msgid > 0)
+	{
+		msgctl(msgid,IPC_RMID,0);
+	}
+	//Socket
+	if(un_cliente.id > 0)
+	{
+		close(un_cliente.id);
+	}
+	exit(EXIT_SUCCESS);
 }
