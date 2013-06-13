@@ -28,7 +28,7 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
       if (un_cliente->estado == ESTADO_ESPERANDO)
       {
           cliente_dest = buscar_cliente(clientes_conectados,un_cliente->un_paquete.user_dest);
-
+          printf("Los clientes %d y %d estan realizando una transferencia \n", un_cliente->id, un_cliente->un_paquete.user_dest);
           if (cliente_dest != NULL && cliente_dest->estado == ESTADO_ESPERANDO)
           {
             
@@ -66,7 +66,7 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
       if (un_cliente->estado == ESTADO_ENVIANDO)
       {
           cliente_dest = buscar_cliente(clientes_conectados,un_cliente->otro_id);
-          printf("soy el id del cliente destino -> %d \n", cliente_dest->id);
+          //printf("soy el id del cliente destino -> %d \n", cliente_dest->id);
           if (cliente_dest != NULL && cliente_dest->estado == ESTADO_RECIBIENDO)
           {
             send(cliente_dest->id, &un_cliente->un_paquete, sizeof(struct paquete), 0 );
@@ -110,6 +110,7 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
           cliente_dest = buscar_cliente(clientes_conectados,un_cliente->otro_id);
           if (cliente_dest != NULL && cliente_dest->estado == ESTADO_RECIBIENDO)
           {
+            printf("Los clientes %d y %d finalizaron la transferencia \n", un_cliente->id, un_cliente->otro_id);
             un_cliente->cant_archivos += 1;
             cliente_dest->otro_id = 0;
             cliente_dest->estado = ESTADO_ESPERANDO;

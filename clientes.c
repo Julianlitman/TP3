@@ -142,11 +142,31 @@ void listar_clientes_remoto(nodo_clientes *cliente, int fd)
 	char buffer[100];
 	sprintf(buffer,"Imprimiendo clientes \n");
 	imprimirRemoto(buffer,fd);
-
+	char estado[50] = "";
 
 	while(cliente != NULL)
 	{
-		sprintf(buffer,"ID: %d Archivos enviados: %d  Estado: %d   \n ",cliente->id ,cliente->cant_archivos, cliente->estado);
+
+		 switch(cliente->estado)
+		 {
+		 	case 1:
+		 		strcpy(estado,"Recibiendo");
+		 		break;
+		 	case 2:
+		 		strcpy(estado,"Enviando");
+		 		break;
+
+		 	case 3:
+		 		strcpy(estado,"Esperando");
+		 		break;
+			case 4:
+		 		strcpy(estado,"Cancelando");
+		 		break;		 			
+		 	case 5:
+		 	strcpy(estado,"Esperando para enviar");
+		 		break;
+		 }
+		sprintf(buffer,"ID: %d Archivos enviados: %d  Estado: %s   \n",cliente->id ,cliente->cant_archivos, estado);
 		imprimirRemoto(buffer,fd);
 		cliente = cliente->sig;
 	}

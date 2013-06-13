@@ -38,7 +38,7 @@ int main()
 
 	signal(SIGINT,cerrar_todo);
 	msgid = msgget(IPC_PRIVATE,IPC_CREAT|0777);
-	printf("%ld, %ld, %ld, %ld \n",sizeof(int), sizeof(char), sizeof(struct paquete), sizeof(struct contenido));
+	//printf("%ld, %ld, %ld, %ld \n",sizeof(int), sizeof(char), sizeof(struct paquete), sizeof(struct contenido));
 	startClient();
 	//Cierro la cola de mensajes
 
@@ -128,7 +128,7 @@ int startClient(){
 
 	//meter thread
     pthread_create(&thid,NULL, &menu_cliente, NULL);
-    logger("ACA YA ESTOY CONECTADO!\n");
+    //logger("ACA YA ESTOY CONECTADO!\n");
     un_cliente.estado = ESTADO_ESPERANDO;
 	un_cliente.id = sockfd;
 	un_cliente.buffer_pos = 0;
@@ -254,7 +254,7 @@ void* menu_cliente(void * arg)
 				printf("Ingrese el ID del destinatario \n");
 				scanf("%d", &un_mensaje.user_dest);
 				printf("Ingrese el nombre del archivo \n");
-				scanf("%s", un_mensaje.nombre);
+				scanf("%ss", un_mensaje.nombre);
 				un_mensaje.accion = ACCION_PEDIDO;
 				msgsnd(msgid,&un_mensaje, ((sizeof(struct mensaje)) - (sizeof(long))), 0);
 				break;
