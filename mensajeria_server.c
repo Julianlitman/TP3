@@ -3,7 +3,7 @@
 
 void enviar_cancelar(nodo_clientes *un_cliente)
 {
-  printf("cliente destino %d \n",un_cliente->otro_id);
+  printf("id %d \n",un_cliente->id);
   struct paquete un_paquete;
   struct contenido un_contenido;
   un_paquete.accion = ACCION_CANCELAR;
@@ -11,8 +11,8 @@ void enviar_cancelar(nodo_clientes *un_cliente)
   un_paquete.user_orig = un_cliente->id;
   un_cliente->estado = ESTADO_ESPERANDO;
   un_paquete.longitud = 0;
-  send(un_cliente->otro_id, &un_paquete, sizeof(struct paquete), 0 );
-  send(un_cliente->otro_id, &un_contenido, sizeof(struct contenido), 0 );   
+  send(un_cliente->id, &un_paquete, sizeof(struct paquete), 0 );
+  send(un_cliente->id, &un_contenido, sizeof(struct contenido), 0 );   
 }
 
 void al_recibir_mensaje(nodo_clientes *un_cliente)
@@ -92,7 +92,7 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
             if (cliente_dest != NULL)
             {
              //Lo hice funcion_cancelar
-              enviar_cancelar(un_cliente);
+              enviar_cancelar(cliente_dest);
               un_cliente->otro_id = 0;
               cliente_dest->estado = ESTADO_ESPERANDO;
               cliente_dest->otro_id = 0;

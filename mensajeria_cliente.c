@@ -110,17 +110,19 @@ void al_recibir_mensaje(nodo_clientes *un_cliente)
     break;
 
  case ACCION_CANCELAR:
+    printf("Paso por el accion cancelar 1 \n");
     if(un_cliente->estado == ESTADO_RECIBIENDO || un_cliente->estado == ESTADO_ENVIANDO)
     {
+        printf("Paso por el accion cancelar 2 \n");
       close(un_cliente->fd_archivo);
       if(un_cliente->estado == ESTADO_RECIBIENDO)
       {
+        printf("Paso por el accion cancelar 3 \n");
           unlink(un_cliente->nombre_archivo);  
       }
+    }
       un_cliente->estado = ESTADO_ESPERANDO;
       un_cliente->otro_id = 0;
-
-    }
     break;  
  
  case ACCION_IMPRIMIR:
